@@ -13,7 +13,7 @@ exports.fetchUserById = async (req, res) => {
 exports.updateUser = async (req, res) => {
   const { id } = req.params;
   try {
-    const docs = await Product.findByIdAndUpdate(id, req.body, { new: true });
+    const docs = await User.findByIdAndUpdate(id, req.body, { new: true });
     res.status(200).json(docs);
   } catch (err) {
     res.status(400).json(err);

@@ -3,7 +3,7 @@ const { Cart } = require("../Model/Cart");
 exports.fetchCartItemsByUser= async (req, res) => {
     const {user} = req.query;
   try {
-    const cartItems = await Cart.find({user:user}).populate('user').populate('product').exec();
+    const cartItems = await Cart.find({user:user}).populate('product').exec();
     res.status(200).json(cartItems);
   } catch (err) {
     res.status(400).json(err);
@@ -13,7 +13,18 @@ exports.fetchCartItemsByUser= async (req, res) => {
 exports.updateCart = async (req, res) => {
   const { id } = req.params;
   try {
-    const docs = await Cart.findByIdAndUpdate(id, req.body, { new: true });
+    const docs = await Cart.findByIdAndUpdate(id, req.body, { new: true }).populate('product');
+    res.status(200).json(docs);
+  } catch (err) {
+    res.status(400).json(err);
+  }
+};
+exports.deleteCartItem = async (req, res) => {
+  const { id } = req.params;
+  console.log(id);
+  try {
+    const docs = await Cart.findByIdAndDelete(id);
+    console.log(docs)
     res.status(200).json(docs);
   } catch (err) {
     res.status(400).json(err);

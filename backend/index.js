@@ -7,6 +7,7 @@ const brandsRouter = require('./Routes/Brands')
 const usersRouter = require('./Routes/User')
 const authRouter = require('./Routes/Auth')
 const cartRouter = require('./Routes/Cart')
+const orderRouter = require('./Routes/Order')
 const server  = express();
 
 //middle-wares
@@ -18,6 +19,7 @@ server.use('/brands', brandsRouter.router)
 server.use('/users', usersRouter.router)
 server.use('/auth', authRouter.router)
 server.use('/carts', cartRouter.router)
+server.use('/orders', orderRouter.router)
 
 async function main(){
     await mongoose.connect('mongodb://127.0.0.1:27017/ecommerce')
