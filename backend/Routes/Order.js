@@ -3,6 +3,6 @@ const { addtoOrder, fetchOrderByUser, updateOrder, fetchAllOrders } = require('.
 
 const router = express.Router();
 
-router.post('/' , addtoOrder).get("/user/:userId", fetchOrderByUser).patch('/:id', updateOrder).get('/',fetchAllOrders);
+router.post('/' , addtoOrder).get("/own", fetchOrderByUser).patch('/:id', updateOrder).get('/',fetchAllOrders);
 
 exports.router = router;
