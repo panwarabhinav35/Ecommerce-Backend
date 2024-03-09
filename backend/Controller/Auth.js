@@ -5,9 +5,6 @@ const { serializeUser } = require("passport");
 const SECRET_KEY = "SECRET_KEY";
 const jwt = require("jsonwebtoken");
 
-
-
-
 exports.createUser = async (req, res) => {
   try {
     const salt = crypto.randomBytes(16);
@@ -25,8 +22,19 @@ exports.createUser = async (req, res) => {
             res.status(400).json(err);
           } else {
             const token = jwt.sign(sanitizeUser(doc), SECRET_KEY);
-            res.cookie('jwt', token, { expires: new Date(Date.now() + 3600000), httpOnly: true })
-            res.status(201).json(token);
+            res.cookie("jwt", token, {
+              expires: new Date(Date.now() + 3600000),
+              httpOnly: true,
+            });
+            res
+              .status(201)
+              .json({
+                id: doc.id,
+                role: doc.role,
+                addresses: doc.addresses,
+                email: doc.email,
+                token,
+              });
           }
         });
       }
@@ -37,8 +45,25 @@ exports.createUser = async (req, res) => {
 };
 
 exports.loginUser = async (req, res) => {
-  res.cookie('jwt', req.user.token, { expires: new Date(Date.now() + 3600000), httpOnly: true }).status(201).json(req.user.token);
+  const user = req.user;
+  res
+    .cookie("jwt", user.token, {
+      expires: new Date(Date.now() + 3600000),
+      httpOnly: true,
+    })
+    .status(201)
+    .json({
+      id: user.id,
+      role: user.role,
+      addresses: user.addresses,
+      email: user.email,
+      token: user.token,
+    });
 };
-exports.checkUser = async (req, res) => {
-  res.json(req.user);
+exports.checkAuth = async (req, res) => {
+  if (req.user) {
+    res.json(sanitizeUser(req.user));
+  } else {
+    res.sendStatus(401);
+  }
 };

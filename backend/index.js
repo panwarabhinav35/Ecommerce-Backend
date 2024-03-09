@@ -73,7 +73,7 @@ passport.use(
             return done(null, false, { message: "invalid credentials" });
           } else {
             const token = jwt.sign(sanitizeUser(user), SECRET_KEY);
-            done(null, {token});
+            done(null, {id : user.id , role : user.role , addresses:user.addresses , email:user.email,token});
           }
         }
       );
@@ -115,6 +115,34 @@ passport.deserializeUser(function (user, cb) {
   console.log("de-serialise------------", user);
   process.nextTick(function () {
     return cb(null, user);
+  });
+});
+
+//Payments
+
+// This is your test secret API key.
+const stripe = require("stripe")('sk_test_51OsKSeSAEGwpy0y7swngq6ROKngLxVks8Oy3xB2BMko3xcdO9WmaelYf9t8Z8yLqzixVZKC4oo8AgS1izFjMRQFe00B748dMyW');
+
+
+const calculateOrderAmount = (items) => {
+  return 1400;
+};
+
+server.post("/create-payment-intent", async (req, res) => {
+  const { items } = req.body;
+
+  // Create a PaymentIntent with the order amount and currency
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: calculateOrderAmount(items),
+    currency: "inr",
+    // In the latest version of the API, specifying the `automatic_payment_methods` parameter is optional because Stripe enables its functionality by default.
+    automatic_payment_methods: {
+      enabled: true,
+    },
+  });
+
+  res.send({
+    clientSecret: paymentIntent.client_secret,
   });
 });
 
