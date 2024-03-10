@@ -25,12 +25,16 @@ exports.fetchAllProduct = async (req, res) => {
   }
 
   if (req.query.category) {
-    query = query.find({ category: req.query.category });
-    queryCount = queryCount.find({ category: req.query.category });
+    let cat = req.query.category.split("_")
+    cat.splice(cat.length-1,1)
+    query = query.find({ category: {$in : cat} });
+    queryCount = queryCount.find({ category: {$in : cat} });
   }
   if (req.query.brand) {
-    query = query.find({ brand: req.query.brand });
-    queryCount = queryCount.find({ brand: req.query.brand });
+    let brandArray = req.query.brand.split("_")
+    brandArray.splice(brandArray.length-1,1)
+    query = query.find({ brand: {$in : brandArray} });
+    queryCount = queryCount.find({ brand: {$in : brandArray} });
   }
   if (req.query._sort) {
     query = query.sort({ [req.query._sort]: "asc" });
