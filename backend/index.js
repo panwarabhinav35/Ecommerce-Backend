@@ -8,6 +8,7 @@ const LocalStrategy = require("passport-local").Strategy;
 const crypto = require("crypto");
 const JwtStrategy = require("passport-jwt").Strategy;
 const ExtractJwt = require("passport-jwt").ExtractJwt;
+require('dotenv').config();
 
 const productsRouter = require("./Routes/Products");
 const categoriesRouter = require("./Routes/Category");
@@ -20,7 +21,8 @@ const { User } = require("./Model/User");
 const { isAuth, sanitizeUser, cookieExTractor } = require("./Services/common");
 const cookieParser = require("cookie-parser");
 const server = express();
-const SECRET_KEY = "SECRET_KEY";
+const SECRET_KEY = process.env.SECRET_KEY;
+const Razorpay = require("razorpay");
 
 //JWT options
 var opts = {};
@@ -29,8 +31,8 @@ opts.secretOrKey = SECRET_KEY; //TODO : shoul not be in code
 
 //middle-wares
 
-server.use(express.static('build'))
-server.use(cookieParser())
+server.use(express.static("build"));
+server.use(cookieParser());
 server.use(
   session({
     secret: "keyboard cat",
@@ -45,16 +47,20 @@ server.use(cors());
 server.use(express.json()); // to parse request body
 server.use("/products", isAuth(), productsRouter.router);
 server.use("/categories", isAuth(), categoriesRouter.router);
-server.use("/brands",isAuth(), brandsRouter.router);
-server.use("/users",isAuth(), usersRouter.router);
+server.use("/brands", isAuth(), brandsRouter.router);
+server.use("/users", isAuth(), usersRouter.router);
 server.use("/auth", authRouter.router);
-server.use("/carts",isAuth(), cartRouter.router);
-server.use("/orders",isAuth(), orderRouter.router);
+server.use("/carts", isAuth(), cartRouter.router);
+server.use("/orders", isAuth(), orderRouter.router);
 
 // PassPort Strategies
 passport.use(
   "local",
-  new LocalStrategy({usernameField : "email"} , async function (email, password, done) {
+  new LocalStrategy({ usernameField: "email" }, async function (
+    email,
+    password,
+    done
+  ) {
     //by default passport uses username
     try {
       const user = await User.findOne({ email: email }).exec();
@@ -73,7 +79,13 @@ passport.use(
             return done(null, false, { message: "invalid credentials" });
           } else {
             const token = jwt.sign(sanitizeUser(user), SECRET_KEY);
-            done(null, {id : user.id , role : user.role , addresses:user.addresses , email:user.email,token});
+            done(null, {
+              id: user.id,
+              role: user.role,
+              addresses: user.addresses,
+              email: user.email,
+              token,
+            });
           }
         }
       );
@@ -87,16 +99,16 @@ passport.use(
   "jwt",
   new JwtStrategy(opts, async function (jwt_payload, done) {
     console.log({ jwt_payload });
-    try{
+    try {
       // const user =await User.findOne({ _id: jwt_payload.sub })
-      const user =await User.findOne({ email: jwt_payload.email })
+      const user = await User.findOne({ email: jwt_payload.email });
       if (user) {
         return done(null, sanitizeUser(user));
       } else {
         return done(null, false);
         // or you could create a new account
       }
-    }catch(err){
+    } catch (err) {
       return done(err, false);
     }
   })
@@ -120,30 +132,29 @@ passport.deserializeUser(function (user, cb) {
 
 //Payments
 
-// This is your test secret API key.
-const stripe = require("stripe")('sk_test_51OsKSeSAEGwpy0y7swngq6ROKngLxVks8Oy3xB2BMko3xcdO9WmaelYf9t8Z8yLqzixVZKC4oo8AgS1izFjMRQFe00B748dMyW');
+const instance = new Razorpay({
+  key_id: process.env.RAZOR_PAY_API_KEY,
+  key_secret: process.env.RAZOR_PAY_API_SECRET,
+});
 
+server.get("/getKey", (req, res) => {
+  res.status(200).json({ key: process.env.RAZOR_PAY_API_KEY });
+});
 
-const calculateOrderAmount = (items) => {
-  return 1400;
-};
-
-server.post("/create-payment-intent", async (req, res) => {
-  const { items } = req.body;
-
-  // Create a PaymentIntent with the order amount and currency
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount: calculateOrderAmount(items),
-    currency: "inr",
-    // In the latest version of the API, specifying the `automatic_payment_methods` parameter is optional because Stripe enables its functionality by default.
-    automatic_payment_methods: {
-      enabled: true,
-    },
-  });
-
-  res.send({
-    clientSecret: paymentIntent.client_secret,
-  });
+server.post("/razorpay", async (req, res) => {
+  const options = {
+    amount: Number(req.body.amount) * 100,
+    currency: "INR",
+  };
+  try {
+    const order = await instance.orders.create(options);
+    res.status(200).json(order);
+  } catch (err) {
+    res.status(400).json(err);
+  }
+});
+server.post("/paymentVerification", async (req, res) => {
+  res.status(200).json({ success: true });
 });
 
 async function main() {
@@ -154,7 +165,7 @@ async function main() {
 main().catch((err) => console.log(err));
 
 server.get("/", (req, res) => {
-  res.json({ status: "success" });
+  res.json({ success : true });
 });
 
 server.listen(8080, () => {
